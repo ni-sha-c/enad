@@ -151,12 +151,13 @@ function get_dzbardr_EA(M::Int64)
 	y0 = -25.e0 + 50.e0*rand(1,n)
 	z0 = 5.0 + 35.0*rand(1,n)
 	
-	dzbardr = 0.0
+	dzbardr = zeros(n)
 	for i = 1:n
 			X0 = [x0[i],y0[i],z0[i]]
-			dzbardr += get_dzbardr_adjoint(X0,M)
+			dzbardr[i] = get_dzbardr_adjoint(X0,M)
 	end
-	dzbardr /= n
-	return dzbardr
+	dzbardr_mean = mean(dzbardr)
+	dzbardr_var = var(dzbardr)
+	return dzbardr_mean,dzbardr_var
 end
 end
