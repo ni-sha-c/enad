@@ -1,7 +1,7 @@
 include("Lorenz.jl")
 
 nop = 200
-M = linspace(10,5000,nop)
+M = linspace(10,600,nop)
 θ = zeros(nop,1)
 var_sens = zeros(nop,1)
 μ = 0.96
