@@ -1,15 +1,23 @@
 include("Lorenz.jl")
 
-nop = 200
-M = linspace(10,600,nop)
-θ = zeros(nop,1)
-var_sens = zeros(nop,1)
 μ = 0.96
-for i = 1:nop
+NLy = 50
+Ly = linspace(0.5,5.0,NLy)
+opt_t = zeros(NLy,1)
+for k = 1:NLy
+	
+	M = 1:5:floor(Int64,600/Ly[k])
+	nop = length(M)
+	θ = zeros(nop,1)
+	var_sens = zeros(nop,1)
 
-	AD_OUT = Lorenz.get_dzbardr_EA(floor(Int64,M[i]))
+	for i = 1:nop
+
+	AD_OUT = Lorenz.get_dzbardr_EA(floor(Int64,M[i]),Ly[k])
 	θ[i] = AD_OUT[1]
+
 	var_sens[i] = AD_OUT[2]
 end
-err = log(abs(θ - μ))
-plot(M,err)
+	opt_t[k] = findmin(abs(θ-μ))[2]
+end
+

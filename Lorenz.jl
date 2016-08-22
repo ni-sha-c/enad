@@ -1,24 +1,24 @@
 #Lorenz'63 System
 module Lorenz
 
-function f(X::Array{Float64,1},r::Float64)
+function f(X::Array{Float64,1},r::Float64,t::Float64=1.)
 	params = get_system_params()
 	σ = params[1]
 	b = params[2]
 	x = X[1]
 	y = X[2]
 	z = X[3]
-	dXdt = [-σ*x + σ*y, 
-			-x*z + r*x - y,
-			x*y - b*z]
+	dXdt = [t*(-σ*x + σ*y), 
+			t*(-x*z + r*x - y),
+			t*(x*y - b*z)]
 
 	return dXdt 
 end
-function dfdr(X::Array{Float64,1},r::Float64)
+function dfdr(X::Array{Float64,1},r::Float64,t::Float64=1.)
 
-		return [0, X[1], 0]
+		return [0, t*X[1], 0]
 end
-function dfdX(X::Array{Float64,1},r::Float64)
+function dfdX(X::Array{Float64,1},r::Float64,t::Float64=1.)
 	
 	dfdX_res = zeros(3,3)
 	params = get_system_params()
@@ -28,21 +28,21 @@ function dfdX(X::Array{Float64,1},r::Float64)
 	y = X[2]
 	z = X[3]
 
-	dfdX_res[1,1] = -σ
-	dfdX_res[1,2] = σ
-	dfdX_res[2,1] = -z + r
-	dfdX_res[2,2] = -1.0
-	dfdX_res[2,3] = -x
-	dfdX_res[3,1] = y
-	dfdX_res[3,2] = x
-	dfdX_res[3,3] = -b
+	dfdX_res[1,1] = -t*σ
+	dfdX_res[1,2] = t*σ
+	dfdX_res[2,1] = t*(-z + r)
+	dfdX_res[2,2] = -t*1.0
+	dfdX_res[2,3] = -t*x
+	dfdX_res[3,1] = t*y
+	dfdX_res[3,2] = t*x
+	dfdX_res[3,3] = -t*b
 
 	return dfdX_res
 
 end
-function dvdt(X::Array{Float64,1},v::Array{Float64,1},r::Float64)
+function dvdt(X::Array{Float64,1},v::Array{Float64,1},r::Float64,t::Float64=1.)
 	
-		return dfdr(X,r) + dfdX(X,r)*v
+		return dfdr(X,r,t) + dfdX(X,r,t)*v
 		
 end
 function get_system_params()
@@ -75,7 +75,7 @@ function get_n(M::Int64)
 end
 function get_zbar_direct(r::Float64,N::Int64=get_N(),
 		X0::Array{Float64,1}=[-2.4e0,-3.7e0,14.98e0],
-		flag::Int64=1)	
+		flag::Int64=1,t::Float64=1.)	
 # zbar = (1/τ) ∫_0^τ z(t) dt
 
 		dt = get_dt()
@@ -91,10 +91,10 @@ function get_zbar_direct(r::Float64,N::Int64=get_N(),
 		X[:,1] = X0
 		for j = 2:N
 				Xjm1 = X[:,j-1]
-				k1 = dt*f(Xjm1,r)
-				k2 = dt*f(Xjm1+0.5*k1,r)
-				k3 = dt*f(Xjm1+0.5*k2,r)
-				k4 = dt*f(Xjm1+k3,r)
+				k1 = dt*f(Xjm1,r,t)
+				k2 = dt*f(Xjm1+0.5*k1,r,t)
+				k3 = dt*f(Xjm1+0.5*k2,r,t)
+				k4 = dt*f(Xjm1+k3,r,t)
 				X[:,j] = Xjm1 + 1./6.*k1 + 
 						 1./3.*k2 + 1./3.*k3 +
 						 1./6.*k4 
@@ -107,41 +107,13 @@ function get_zbar_direct(r::Float64,N::Int64=get_N(),
 		end
 		return X
 end
-
-function Jcbn(Xnm1::Array{Float64,1},r)
-		
-	params = get_system_params()
-	σ = params[1]
-	b = params[2]
-
-	dt = get_dt()
-	Ja = zeros(3,3)
-
-	x = Xnm1[1]
-	y = Xnm1[2]
-	z = Xnm1[3]
-
-	Ja[1,1] = 1. - σ*dt
-	Ja[1,2] = σ*dt
-	Ja[1,3] = 0.0
-
-	Ja[2,1] = (r-z)*dt
-	Ja[2,2] =  1. - dt
-	Ja[2,3] = -x*dt
-
-	Ja[3,1] = y*dt
-	Ja[3,2] = x*dt
-	Ja[3,3] = 1. - b*dt
-
-	return Ja
-end
-function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64)
+function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64,t::Float64=1.)
 
 
 		r = get_r()
 		dt = get_dt()
 		dzndX2 = zeros(3,M)
-		X = get_zbar_direct(r,M,X1,0)
+		X = get_zbar_direct(r,M,X1,0,t)
 
 		λ = zeros(3,M)
 		c = [0.0, 0.0, 1./M]
@@ -151,9 +123,9 @@ function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64)
 		
 		for i=1:M-1
 			
-			b[i*3+1:(i+1)*3] = dfdr(X[:,i+1],r)*dt	
+			b[i*3+1:(i+1)*3] = dfdr(X[:,i+1],r,t)*dt	
 				
-			λ[:,M-i] = c + (eye(3,3) + dt*dfdX(X[:,M-i],r))'*λ[:,M-i+1]	
+			λ[:,M-i] = c + (eye(3,3) + dt*dfdX(X[:,M-i],r,t))'*λ[:,M-i+1]	
 
 			#A[3*i + 1:(i+1)*3,(i-1)*3+1:i*3] = -eye(3,3) - dt*dfdX(X[:,i],r)
 			
@@ -168,21 +140,22 @@ function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64)
 		return dzbardr
 
 end
-function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0)
+function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0,
+		t::Float64=1.)
 
 	r = get_r()
 	dt = get_dt()
 
 	v = zeros(3,M)
-	X = get_zbar_direct(r,M,X1,0)
+	X = get_zbar_direct(r,M,X1,0,t)
 
 
 	for i =2:M
 		
-		k1 = dt*dvdt(X[:,i-1], v[:,i-1], r)
-		k2 = dt*dvdt(X[:,i-1], v[:,i-1] + 0.5*k1, r)
-		k3 = dt*dvdt(X[:,i-1], v[:,i-1] + 0.5*k2, r)
-		k4 = dt*dvdt(X[:,i-1], v[:,i-1] + k3, r)
+		k1 = dt*dvdt(X[:,i-1], v[:,i-1], r,t)
+		k2 = dt*dvdt(X[:,i-1], v[:,i-1] + 0.5*k1, r,t)
+		k3 = dt*dvdt(X[:,i-1], v[:,i-1] + 0.5*k2, r,t)
+		k4 = dt*dvdt(X[:,i-1], v[:,i-1] + k3, r,t)
 		v[:,i] = v[:,i-1] + 1./6.*k1 + 1./3.*k2 + 1./3.*k3 +
 				1./6.*k4
 
@@ -198,7 +171,7 @@ function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0)
 	return v
 	
 end
-function get_dzbardr_EA(M::Int64)
+function get_dzbardr_EA(M::Int64,t::Float64=1.)
 
 	n = get_n(M)		
 	x0 = -15.e0 + 30.e0*rand(1,n)
@@ -208,7 +181,7 @@ function get_dzbardr_EA(M::Int64)
 	dzbardr = zeros(n)
 	for i = 1:n
 			X0 = [x0[i],y0[i],z0[i]]
-			dzbardr[i] = get_dzbardr_adjoint(X0,M)[1,1]
+			dzbardr[i] = get_dzbardr_adjoint(X0,M,t)[1,1]
 	end
 	dzbardr_mean = mean(dzbardr)
 	dzbardr_var = var(dzbardr)
