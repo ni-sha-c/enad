@@ -67,9 +67,8 @@ function get_N()
 	N = 26272
 	return N
 end
-function get_n(M::Int64)
+function get_n(M::Int64,N::Int64=get_N())
 #Number of Random Trajectories
-	N = get_N()
 	n = floor(Int64,N/M)
 	return n
 end
@@ -171,7 +170,7 @@ function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0,
 	return v
 	
 end
-function get_dzbardr_EA(M::Int64,t::Float64=1.)
+function get_dzbardr_EA_fixedCost(M::Int64,t::Float64=1.)
 
 	n = get_n(M)		
 	x0 = -15.e0 + 30.e0*rand(1,n)
@@ -187,4 +186,21 @@ function get_dzbardr_EA(M::Int64,t::Float64=1.)
 	dzbardr_var = var(dzbardr)
 	return dzbardr_mean,dzbardr_var
 end
+function get_dzbardr_EA_variableCost(N::Int64,M::Int64,t::Float64=1.)
+
+	n = get_n(M,N)		
+	x0 = -15.e0 + 30.e0*rand(1,n)
+	y0 = -25.e0 + 50.e0*rand(1,n)
+	z0 = 5.0 + 35.0*rand(1,n)
+	
+	dzbardr = zeros(n)
+	for i = 1:n
+			X0 = [x0[i],y0[i],z0[i]]
+			dzbardr[i] = get_dzbardr_adjoint(X0,M,t)[1,1]
+	end
+	#dzbardr_mean = mean(dzbardr)
+	#dzbardr_var = var(dzbardr)
+	return dzbardr
+end
+
 end
