@@ -64,12 +64,17 @@ function get_dr()
 end
 function get_N()
 #Long integration time
-	N = 26272
+#	N = 26272
+	N = 100000
 	return N
 end
 function get_n(M::Int64,N::Int64=get_N())
 #Number of Random Trajectories
+#	if(M>100) 
+		#	N = 10000000
+#	end
 	n = floor(Int64,N/M)
+	
 	return n
 end
 function get_zbar_direct(r::Float64,N::Int64=get_N(),
@@ -106,37 +111,38 @@ function get_zbar_direct(r::Float64,N::Int64=get_N(),
 		end
 		return X
 end
-function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64,t::Float64=1.)
+function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64,t::Float64=1.,flag::Int64=1)
 
 
 		r = get_r()
 		dt = get_dt()
-		dzndX2 = zeros(3,M)
 		X = get_zbar_direct(r,M,X1,0,t)
 
-		λ = zeros(3,M)
+		λ = zeros(3,M-1)
 		c = [0.0, 0.0, 1./M]
-		b = zeros(3*M,1)
-		λ[:,M] = [0,0,1./M]
-		#A = eye(3*M,3*M)
-		
-		for i=1:M-1
+		b = zeros(3*(M-1),1)
+		λ[:,M-1] = [0,0,1./M]
+		A = eye(3*(M-1),3*(M-1))
+		b[1:3] = dfdr(X[:,1],r,t)*dt	
+		for i=1:M-2
 			
 			b[i*3+1:(i+1)*3] = dfdr(X[:,i+1],r,t)*dt	
 				
-			λ[:,M-i] = c + (eye(3,3) + dt*dfdX(X[:,M-i],r,t))'*λ[:,M-i+1]	
+			λ[:,M-i-1] = c + (eye(3,3) + dt*dfdX(X[:,M-i],r,t))'*λ[:,M-i]	
 
-			#A[3*i + 1:(i+1)*3,(i-1)*3+1:i*3] = -eye(3,3) - dt*dfdX(X[:,i],r)
+			A[3*i + 1:(i+1)*3,(i-1)*3+1:i*3] = -eye(3,3) - dt*dfdX(X[:,i+1],r)
 			
 			
 		end
 
 		λ = λ[:]
 		dzbardr = λ'*b
-		#v = A\b
+		v = A\b
 
-
-		return dzbardr
+		if(flag==1)
+			return dzbardr
+		end
+		return v
 
 end
 function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0,
@@ -180,7 +186,8 @@ function get_dzbardr_EA_fixedCost(M::Int64,t::Float64=1.)
 	dzbardr = zeros(n)
 	for i = 1:n
 			X0 = [x0[i],y0[i],z0[i]]
-			dzbardr[i] = get_dzbardr_adjoint(X0,M,t)[1,1]
+	#		dzbardr[i] = get_dzbardr_adjoint(X0,M,t)[1,1]
+			dzbardr[i] = get_dzbardr_tangent(X0,M)#[1,1]
 	end
 	dzbardr_mean = mean(dzbardr)
 	dzbardr_var = var(dzbardr)
