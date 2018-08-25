@@ -64,8 +64,8 @@ function get_dr()
 end
 function get_N()
 #Long integration time
-#	N = 26272
-	N = 100000
+	N = 1000000
+#	N = 100000
 	return N
 end
 function get_n(M::Int64,N::Int64=get_N())
@@ -73,13 +73,13 @@ function get_n(M::Int64,N::Int64=get_N())
 #	if(M>100) 
 		#	N = 10000000
 #	end
-	n = floor(Int64,N/M)
+	n= floor(Int64,N/M)
 	
 	return n
 end
-function get_zbar_direct(r::Float64,N::Int64=get_N(),
+function get_zbar_direct(r::Float64,M::Int64,
 		X0::Array{Float64,1}=[-2.4e0,-3.7e0,14.98e0],
-		flag::Int64=1,t::Float64=1.)	
+		flag::Int64=1,t::Float64=1.,N::Int64=get_N())	
 # zbar = (1/τ) ∫_0^τ z(t) dt
 
 		dt = get_dt()
@@ -91,23 +91,33 @@ function get_zbar_direct(r::Float64,N::Int64=get_N(),
 
 		
 		X0 = [x0, y0, z0]
-		X = zeros(3,N)
-		X[:,1] = X0
+		Xj = X0
+	    if(flag!=2)	
+			X = zeros(3,M)
+			N = M
+			X[:,1] = X0
+		end
 		for j = 2:N
-				Xjm1 = X[:,j-1]
+				Xjm1 = Xj
 				k1 = dt*f(Xjm1,r,t)
 				k2 = dt*f(Xjm1+0.5*k1,r,t)
 				k3 = dt*f(Xjm1+0.5*k2,r,t)
 				k4 = dt*f(Xjm1+k3,r,t)
-				X[:,j] = Xjm1 + 1./6.*k1 + 
+				Xj = Xjm1 + 1./6.*k1 + 
 						 1./3.*k2 + 1./3.*k3 +
-						 1./6.*k4 
+						 1./6.*k4
+				if(flag!=2)	
+					X[:,j] = Xj
+				end
 		end
 		
-		zbar = (0.5*X[3,1] + sum(X[3,2:end-1]) + 0.5*X[3,end])/N
+		#zbar = (0.5*X[3,1] + sum(X[3,2:end-1]) + 0.5*X[3,end])/N
 
-		if(flag==1)
-			return zbar
+		#if(flag==1)
+		#	return zbar
+		#end
+		if(flag==2)
+			return Xj
 		end
 		return X
 end
@@ -131,7 +141,7 @@ function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64,t::Float64=1.,flag::I
 			λ[:,M-i-1] = c + (eye(3,3) + dt*dfdX(X[:,M-i],r,t))'*λ[:,M-i]	
 
 			A[3*i + 1:(i+1)*3,(i-1)*3+1:i*3] = -eye(3,3) - dt*dfdX(X[:,i+1],r)
-			
+		
 			
 		end
 
@@ -145,6 +155,78 @@ function get_dzbardr_adjoint(X1::Array{Float64,1},M::Int64,t::Float64=1.,flag::I
 		return v
 
 end
+function get_dzbardr_adjoint_2(X1::Array{Float64,1},M::Int64,t::Float64=1.,flag::Int64=1)
+
+
+		r = get_r()
+		dt = get_dt()
+		X = get_zbar_direct(r,M,X1,0,t)
+
+		λ = zeros(3,M-1)
+		c = [0.0, 0.0, 1./M]
+		b = zeros(3*(M-1),1)
+		A = eye(3*(M-1),3*(M-1))
+		b[1:3] = dfdr(X[:,1],r,t)*dt	
+		λ[:,M-1] = (eye(3,3) - dt*dfdX(X[:,M],r,t))'\c
+		for i=1:M-2
+			
+			b[i*3+1:(i+1)*3] = dfdr(X[:,i+1],r,t)*dt	
+				
+			λ[:,M-i-1] = (eye(3,3) - dt*dfdX(X[:,M-i],r,t))'\(c + λ[:,M-i])	
+
+			A[3*i + 1:(i+1)*3,(i-1)*3+1:i*3] = -eye(3,3) - dt*dfdX(X[:,i+1],r)
+		
+			
+		end
+
+		λ = λ[:]
+		dzbardr = λ'*b
+		v = A\b
+
+		if(flag==1)
+			return dzbardr
+		end
+		return λ
+
+end
+
+function get_dzbardr_adjoint_3(X1::Array{Float64,1},M::Int64,t::Float64=1.,flag::Int64=1)
+
+
+		r = get_r()
+		dt = get_dt()
+		X = get_zbar_direct(r,M,X1,0,t)
+
+		λ = zeros(3,M-1)
+		c = [0.0, 0.0, 1.0]
+		b = zeros(3*(M-1),1)
+	
+		b[1:3] = dfdr(X[:,1],r,t)*dt	
+		λ[:,M-1] = (eye(3,3) - dt*dfdX(X[:,M],r,t))'\c
+		for i=1:M-2
+			
+			b[i*3+1:(i+1)*3] = dfdr(X[:,i+1],r,t)*dt	
+				
+			λ[:,M-i-1] = (eye(3,3) - dt*dfdX(X[:,M-i],r,t))'\(-dt*c + λ[:,M-i])	
+
+		
+		
+			
+		end
+
+		λ = λ[:]
+		dzbardr = -λ'*b
+	
+
+		if(flag==1)
+			return dzbardr
+		end
+		return λ
+
+end
+
+
+
 function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0,
 		t::Float64=1.)
 
@@ -176,22 +258,37 @@ function get_dzbardr_tangent(X1::Array{Float64,1},M::Int64,flag::Int64=0,
 	return v
 	
 end
-function get_dzbardr_EA_fixedCost(M::Int64,t::Float64=1.)
+function get_dzbardr_EA_fixedCost(M::Int64,T::Int64,t::Float64=1.)
+	#number of trajectories in one experiment: n
+	#total number of experiments: k
+	n = floor(Int64,T/M)
+	k = 100
+	x0 = -15.e0 + 30.e0*rand(1,n*k)
+	y0 = -25.e0 + 50.e0*rand(1,n*k)
+	z0 = 5.0 + 35.0*rand(1,n*k)
 
-	n = get_n(M)		
-	x0 = -15.e0 + 30.e0*rand(1,n)
-	y0 = -25.e0 + 50.e0*rand(1,n)
-	z0 = 5.0 + 35.0*rand(1,n)
 	
-	dzbardr = zeros(n)
-	for i = 1:n
+	dzbardr = zeros(n*k)
+	for i = 1:n*k
 			X0 = [x0[i],y0[i],z0[i]]
-	#		dzbardr[i] = get_dzbardr_adjoint(X0,M,t)[1,1]
-			dzbardr[i] = get_dzbardr_tangent(X0,M)#[1,1]
+			X = get_zbar_direct(get_r(),100,X0,2,1.,5000)	
+
+			X0 = X
+		
+	#		dzbardr[i] = get_dzbardr_adjoint_3(X0,M,t)[1,1]
+    		dzbardr[i] = get_dzbardr_tangent(X0,M,0,t)#[1,1]
 	end
 	dzbardr_mean = mean(dzbardr)
-	dzbardr_var = var(dzbardr)
+	dzbardr_var = 0.0
+	for j=1:k
+			dzbardr_var += (mean(dzbardr[(j-1)*n+1:j*n])-dzbardr_mean).^2.0
+
+			#dzbardr_var += (mean(dzbardr[(j-1)*n +1:j*n])-dzbardr_mean)^2.0
+	end
+	dzbardr_var = dzbardr_var/k
+
 	return dzbardr_mean,dzbardr_var
+	return X0
 end
 function get_dzbardr_EA_variableCost(N::Int64,M::Int64,t::Float64=1.)
 
