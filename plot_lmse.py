@@ -152,8 +152,8 @@ def plot_lmse_vs_k():
     savefig("paper/slopeeminvsT_vs_ratiog1l1.png",dpi=500)
 
 
-if __name__=="__main__":
-#def plot_lorenz63_bias():
+#if __name__=="__main__":
+def plot_lorenz63_bias():
     exp_theta_tauN_tangent = loadtxt("data/expected_value_tangent.txt")
     #exp_theta_tauN_adjoint = loadtxt("data/expected_value_adjoint.txt")
     #exp_theta_tauN_finite_difference = loadtxt("data/expected_value_finite_difference.txt")
@@ -173,23 +173,52 @@ if __name__=="__main__":
     ax.legend()
 
 
+if __name__ == "__main__":
 #def plot_lorenz63_variance():
-    exp_theta_tauN_tangent = loadtxt("data/variance_tangent.txt")
-    #exp_theta_tauN_adjoint = loadtxt("data/variance_adjoint.txt")
-    #exp_theta_tauN_finite_difference = loadtxt("data/variance_finite_difference.txt")
+    variance_tangent = loadtxt("data/voyager/variance_tangent.txt")
+    variance_adjoint = loadtxt("data/voyager/variance_adjoint.txt")
+    variance_finite_difference = loadtxt("data/voyager/variance_finite_difference.txt")
 
-    n_tau = exp_theta_tauN_tangent.shape[0]
+    n_tau = variance_tangent.shape[0]
     tau_beg = 30
     tau_step_size = 5
-    tau_arr = range(tau_beg, tau_beg + tau_step_size*n_tau, \
-            tau_step_size)
-    bias_sq_tangent = (variance_tangent - 1.0)**2.0
-    #bias_sq_adjoint = (exp_theta_tauN_adjoint - 1.0)**2.0
-    #bias_sq_finite_difference = (exp_theta_tauN_finite_difference - 1.0)**2.0
+    tau_arr = array(range(tau_beg, tau_beg + tau_step_size*n_tau, \
+            tau_step_size)) 
+    dt = 0.005
+
+    T = 1000000
+
+    sane_indices_tangent = variance_tangent > 0.0
+    sane_indices_adjoint = variance_adjoint > 0.0
+    sane_indices_finite_difference = variance_finite_difference > 0.0
+    variance_tangent = variance_tangent[sane_indices_tangent]
+    variance_adjoint = variance_adjoint[sane_indices_adjoint]
+    variance_finite_difference = variance_finite_difference[sane_indices_finite_difference]
+    tau_arr_tangent = copy(tau_arr[sane_indices_tangent])
+    tau_arr_adjoint = copy(tau_arr[sane_indices_adjoint])
+    tau_arr_finite_difference = copy(tau_arr[sane_indices_finite_difference])
+    
+    N_times_variance_tangent = (T/tau_arr_tangent)*variance_tangent
+    N_times_variance_adjoint = (T/tau_arr_adjoint)*variance_adjoint
+    N_times_variance_finite_difference = (T/tau_arr_finite_difference)*\
+            variance_finite_difference
+
+    
+    slope_tangent, intercept_tangent, _, _, _ = linregress(2.0*tau_arr_tangent*dt, \
+            log(N_times_variance_tangent))  
+
+    
+    slope_adjoint, intercept_adjoint, _, _, _ = linregress(2.0*tau_arr_adjoint*dt, \
+            log(N_times_variance_adjoint))  
+
+    slope_finite_difference, intercept_finite_difference, _, _, _ = \
+            linregress(2.0*tau_arr_finite_difference*dt, \
+            log(N_times_variance_finite_difference))  
+    
     fig, ax = subplots(1,1,figsize=(15,6.5))   
-    ax.loglog(tau_arr, bias_sq_tangent, label="tangent")
-    #ax.loglog(tau_arr, bias_sq_adjoint, label="adjoint")
-    #ax.loglog(tau_arr, bias_sq_finite_difference, label="FD")
+    ax.semilogy(tau_arr_tangent, N_times_variance_tangent, "o",label="tangent")
+    ax.semilogy(tau_arr_adjoint, N_times_variance_adjoint, "o",label="adjoint")
+    ax.semilogy(tau_arr_finite_difference, N_times_variance_finite_difference, "o", label="FD")
     ax.legend()
 
 
