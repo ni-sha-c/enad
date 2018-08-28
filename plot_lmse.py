@@ -111,8 +111,8 @@ def plot_lmse_vs_r():
     savefig("paper/eminvsr_python.png",dpi=500)
 
 
-if __name__=="__main__":
-#def plot_lmse_vs_k():
+#if __name__=="__main__":
+def plot_lmse_vs_k():
     n_kvalues = 6
     n_rvalues = 100
     n_points = 100
@@ -150,5 +150,47 @@ if __name__=="__main__":
     #        minor_thresholds=(inf,inf))
     #ax.xaxis.set_minor_formatter(xaxis_formatter)
     savefig("paper/slopeeminvsT_vs_ratiog1l1.png",dpi=500)
+
+
+if __name__=="__main__":
+#def plot_lorenz63_bias():
+    exp_theta_tauN_tangent = loadtxt("data/expected_value_tangent.txt")
+    #exp_theta_tauN_adjoint = loadtxt("data/expected_value_adjoint.txt")
+    #exp_theta_tauN_finite_difference = loadtxt("data/expected_value_finite_difference.txt")
+
+    n_tau = exp_theta_tauN_tangent.shape[0]
+    tau_beg = 30
+    tau_step_size = 5
+    tau_arr = range(tau_beg, tau_beg + tau_step_size*n_tau, \
+            tau_step_size)
+    bias_sq_tangent = (exp_theta_tauN_tangent - 1.0)**2.0
+    #bias_sq_adjoint = (exp_theta_tauN_adjoint - 1.0)**2.0
+    #bias_sq_finite_difference = (exp_theta_tauN_finite_difference - 1.0)**2.0
+    fig, ax = subplots(1,1,figsize=(15,6.5))   
+    ax.loglog(tau_arr, bias_sq_tangent, label="tangent")
+    #ax.loglog(tau_arr, bias_sq_adjoint, label="adjoint")
+    #ax.loglog(tau_arr, bias_sq_finite_difference, label="FD")
+    ax.legend()
+
+
+#def plot_lorenz63_variance():
+    exp_theta_tauN_tangent = loadtxt("data/variance_tangent.txt")
+    #exp_theta_tauN_adjoint = loadtxt("data/variance_adjoint.txt")
+    #exp_theta_tauN_finite_difference = loadtxt("data/variance_finite_difference.txt")
+
+    n_tau = exp_theta_tauN_tangent.shape[0]
+    tau_beg = 30
+    tau_step_size = 5
+    tau_arr = range(tau_beg, tau_beg + tau_step_size*n_tau, \
+            tau_step_size)
+    bias_sq_tangent = (variance_tangent - 1.0)**2.0
+    #bias_sq_adjoint = (exp_theta_tauN_adjoint - 1.0)**2.0
+    #bias_sq_finite_difference = (exp_theta_tauN_finite_difference - 1.0)**2.0
+    fig, ax = subplots(1,1,figsize=(15,6.5))   
+    ax.loglog(tau_arr, bias_sq_tangent, label="tangent")
+    #ax.loglog(tau_arr, bias_sq_adjoint, label="adjoint")
+    #ax.loglog(tau_arr, bias_sq_finite_difference, label="FD")
+    ax.legend()
+
 
 

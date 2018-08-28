@@ -32,7 +32,7 @@ function compute_finite_difference_sensitivity(u0::Array{Float64,1},s::Array{Flo
 	uminus[:,1] = copy(u0)
 
 	J_weights = dt*ones(tau)
-    J_weights[1] /= 2.0
+	J_weights[1] /= 2.0
 	J_weights[tau] /= 2.0
 	
 	splus = copy(s)
