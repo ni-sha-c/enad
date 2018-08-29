@@ -1,24 +1,24 @@
 τ_runup = 2000 
 function compute_tangent_sensitivity(u0::Array{Float64,1},s::Array{Float64,1},
 							 tau::Int64,ds::Array{Float64,1})
-    u0 = Step(u0,s,τ_runup)
+    	u0 = Step(u0,s,τ_runup)
 	n_dim = length(u0)
 	du = zeros(n_dim)
 	u = zeros(n_dim,tau)
 	u[:,1] = copy(u0)
 	J_weights = dt*ones(tau)
-    J_weights[1] /= 2.0
+    	J_weights[1] /= 2.0
 	J_weights[tau] /= 2.0
 
 	for n = 2:tau
 		u[:,n] = Step(u[:,n-1],s,1)
-    end
+    	end
 	theta = 0.
-    for n = 1:tau-1
+    	for n = 1:tau-1
 		du = tangent_step(du, u[:,n], s, ds)
 		theta += du'*nabla_objective(u[:,n+1],s)*
 						J_weights[n+1]
-    end
+    	end
 	return theta
 end
 function compute_finite_difference_sensitivity(u0::Array{Float64,1},s::Array{Float64,1},
