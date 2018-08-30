@@ -1,7 +1,7 @@
 τ_runup = 2000 
 function compute_tangent_sensitivity(u0::Array{Float64,1},s::Array{Float64,1},
 							 tau::Int64,ds::Array{Float64,1})
-    	u0 = Step(u0,s,τ_runup)
+    u0 = Step(u0,s,τ_runup)
 	n_dim = length(u0)
 	du = zeros(n_dim)
 	u = zeros(n_dim,tau)

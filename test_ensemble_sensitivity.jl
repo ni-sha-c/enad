@@ -3,18 +3,39 @@
 @everywhere using LinearAlgebra
 using PyPlot
 ds = [0.,1.0,0.]
+function fitaline(x, y)
+	n = length(y)
+	@assert length(x)==n
+	xbar = sum(x)/n
+	ybar = sum(y)/n
+	sumxy = dot(x,y)
+	sumxsq = sum(x.^2)
+	varx = sumxsq - n*xbar*xbar
+	slope = (sumxy - n*xbar*ybar)/varx
+	intercept = (ybar*sumxsq - xbar*sumxy)/varx
+	return slope, intercept
+
+end
 function test_growth_tangent()
 	u = rand(3)
-	tau_len = 40
-	tau_arr = range(30.0, stop=2000, length=tau_len)
+	tau_len = 1000
+	tau_arr = range(30.0, stop=20000, length=tau_len)
 	tan_sens = zeros(tau_len)
+    adj_sens = zeros(tau_len)
 	for (tau_ind, tau) in enumerate(tau_arr)
 		tan_sens[tau_ind] = 
 		compute_tangent_sensitivity(rand(3), s0, 
 				floor(Int,tau), ds)
-	end	
-	semilogy(tau_arr, abs.(tan_sens))
+		adj_sens[tau_ind] = 
+		compute_adjoint_sensitivity(rand(3), s0, 
+				floor(Int,tau), ds)
 
+	end	
+    slope_tangent, intercept_tangent = fitaline(tau_arr[20:end], log.(abs.(tan_sens[20:end])))
+    slope_adjoint, intercept_adjoint = fitaline(tau_arr[20:end], log.(abs.(adj_sens[20:end])))
+    @assert abs(slope_tangent - slope_adjoint) < 1.e-1
+    @assert abs(slope_tangent/dt - 0.96) < 0.05
+	
 end
 
 function test_lyapunov_exponent_tangent()
@@ -61,8 +82,6 @@ function test_lyapunov_exponent_adjoint()
 	dw_nm1 = copy(dw)
 	
     	for n = tau:-1:2
-		global lyap_exp_adjoint
-		global dw_np1, dw
 		dw_nm1 = adjoint_step(dw, u[:,n-1], s0)
 		lyap_exp_adjoint += log(norm(dw_nm1)/norm(dw))/(tau*dt)
 		dw[:] = dw_nm1
