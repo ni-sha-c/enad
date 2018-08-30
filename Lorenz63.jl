@@ -1,8 +1,7 @@
 #Lorenz'63 System
 dt = 0.005e0
 s0 = [10.,28.,8.0/3.0]
-function Step(u0::Array{Float64,1},s::Array{Float64,1},N::Int64)	
-
+function Step(u0::Array{Float64,1},s::Array{Float64,1},N::Int64)
 		u = copy(u0)
 		for j = 1:N
 			
@@ -20,28 +19,29 @@ function Step(u0::Array{Float64,1},s::Array{Float64,1},N::Int64)
 	return u
 end
 
-function tangent_step(v::Array{Float64,1},u::Array{Float64,1},
+function tangent_step(v0::Array{Float64,1},u::Array{Float64,1},
 					  s::Array{Float64,1},ds::Array{Float64,1})
 
 	x = u[1]
 	y = u[2]
 	z = u[3]
 
+    v = copy(v0)
 	vx = v[1]
 	vy = v[2]
 	vz = v[3]
 
-	v[1] = vx + dt*s[1]*(vy-vx) + dt*ds[1]*(y-x)
-	v[2] = vy + dt*(vx*(s[2]-vz)-vy) + dt*ds[2]*x
-	v[3] = vz + dt*(vx*vy - s[3]*vz) + dt*ds[3]*z
+	v[1] = vx + dt*s[1]*(vy - vx) + dt*ds[1]*(y - x)
+	v[2] = vy + dt*(vx*(s[2] - z) - vy - x*vz) + dt*ds[2]*x
+	v[3] = vz + dt*(vx*y + vy*x - s[3]*vz) + dt*ds[3]*z
 				
-	return v
-
+    return v
 end
 
-function adjoint_step(w::Array{Float64,1},u::Array{Float64,1},
+function adjoint_step(w0::Array{Float64,1},u::Array{Float64,1},
 					  s::Array{Float64,1})
 	
+    w = copy(w0)
 	wx = w[1]
 	wy = w[2]
 	wz = w[3]
@@ -51,7 +51,7 @@ function adjoint_step(w::Array{Float64,1},u::Array{Float64,1},
 	z = u[3]
 
 	w[1] = wx*(1. - dt*s[1]) + 
-	wy*dt*x*(s[2]-z) + 
+	wy*dt*(s[2] - z) + 
 	wz*dt*y 
 
 	w[2] = wx*dt*s[1] + 
@@ -95,13 +95,13 @@ function dfds(u::Array{Float64,1},
 
 end
 
-function tangent_source(v::Array{Float64,1},u::Array{Float64,1},
+function tangent_source(v0::Array{Float64,1},u::Array{Float64,1},
 						s::Array{Float64,1},ds::Array{Float64,1})
 	x = u[1]
 	y = u[2]
 	z = u[3]
 	
-		
+    v = copy(v0)
 	v[1] += dt*ds[1]*(y-x)
 	v[2] += dt*ds[2]*x
 	v[3] += dt*ds[3]*z
@@ -111,11 +111,13 @@ function tangent_source(v::Array{Float64,1},u::Array{Float64,1},
 
 end
 
-function adjoint_source(w::Array{Float64,1},u::Array{Float64,1},
+function adjoint_source(w0::Array{Float64,1},u::Array{Float64,1},
 			s::Array{Float64,1},dm::Float64)
 
+    w = copy(w0)
 	dJ = nabla_objective(u,s)
 	w += dm*dJ
+    return w 
 
 end
 
