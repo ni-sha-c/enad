@@ -152,36 +152,78 @@ def plot_lmse_vs_k():
     savefig("paper/slopeeminvsT_vs_ratiog1l1.png",dpi=500)
 
 
-#if __name__=="__main__":
-def plot_lorenz63_bias():
-    exp_theta_tauN_tangent = loadtxt("data/expected_value_tangent.txt")
-    #exp_theta_tauN_adjoint = loadtxt("data/expected_value_adjoint.txt")
-    #exp_theta_tauN_finite_difference = loadtxt("data/expected_value_finite_difference.txt")
+if __name__=="__main__":
+#def plot_lorenz63_bias():
+    exp_tangent = loadtxt("data/hypersonic_new/expected_value_tangent.txt")
+    exp_adjoint = loadtxt("data/hypersonic_new/expected_value_adjoint.txt")
+    exp_finite_difference = loadtxt("data/hypersonic_new/expected_value_finite_difference.txt")
+    exp_tangent_part2 = loadtxt("data/voyager_new/expected_value_tangent.txt")
+    exp_adjoint_part2 = loadtxt("data/voyager_new/expected_value_adjoint.txt")
+    exp_finite_difference_part2 = loadtxt("data/voyager_new/expected_value_finite_difference.txt")
 
-    n_tau = exp_theta_tauN_tangent.shape[0]
+    exp_tangent = append(exp_tangent,exp_tangent_part2)
+    exp_adjoint = append(exp_adjoint,exp_adjoint_part2)
+    exp_finite_difference = append(exp_finite_difference,exp_finite_difference_part2)
+
+    n_tau = exp_tangent.shape[0]
+    
     tau_beg = 30
-    tau_step_size = 5
-    tau_arr = range(tau_beg, tau_beg + tau_step_size*n_tau, \
-            tau_step_size)
-    bias_sq_tangent = (exp_theta_tauN_tangent - 1.0)**2.0
-    #bias_sq_adjoint = (exp_theta_tauN_adjoint - 1.0)**2.0
-    #bias_sq_finite_difference = (exp_theta_tauN_finite_difference - 1.0)**2.0
-    fig, ax = subplots(1,1,figsize=(15,6.5))   
-    ax.loglog(tau_arr, bias_sq_tangent, label="tangent")
-    #ax.loglog(tau_arr, bias_sq_adjoint, label="adjoint")
-    #ax.loglog(tau_arr, bias_sq_finite_difference, label="FD")
+    tau_step_size = 10
+    tau_arr = array(range(tau_beg, tau_beg + tau_step_size*n_tau, \
+            tau_step_size)) 
+    dt = 0.005
+
+    sq_bias_tangent = (exp_tangent - 1.0)**2.0
+    sq_bias_adjoint = (exp_adjoint - 1.0)**2.0
+    sq_bias_finite_difference = (exp_finite_difference - 1.0)**2.0
+        
+    slope_tangent, intercept_tangent, _, _, _ = linregress(2.0*tau_arr[50:]*dt, \
+            log(sq_bias_tangent[50:]))  
+
+    
+    slope_adjoint, intercept_adjoint, _, _, _ = linregress(2.0*tau_arr*dt, \
+            log(sq_bias_adjoint))  
+
+    slope_finite_difference, intercept_finite_difference, _, _, _ = \
+            linregress(2.0*tau_arr*dt, \
+            log(sq_bias_finite_difference))  
+    
+    fig, ax = subplots(1,1,figsize=(15,15))   
+    ax.semilogy(tau_arr*dt, sq_bias_tangent,label="tangent")
+    ax.semilogy(tau_arr*dt, sq_bias_adjoint,label="adjoint")
+    ax.semilogy(tau_arr*dt, sq_bias_finite_difference, label="FD")
     ax.legend()
 
+    ax.set_xlabel(r"$\tau$",fontsize=14)
+    ax.set_ylabel(r"${\rm b}^2$",fontsize=14,\
+            rotation="horizontal",labelpad=20)
+    ax.grid(True,which='both',axis='both')
+    ax.tick_params(labelsize=14)
+    #xaxis_formatter = LogFormatter(base=10.0,labelOnlyBase=False,\
+    #        minor_thresholds=(inf,inf))
+    #ax.xaxis.set_minor_formatter(xaxis_formatter)
+    savefig("paper/sqbias_vs_tau.png",dpi=500)
 
-if __name__ == "__main__":
-#def plot_lorenz63_variance():
-    variance_tangent = loadtxt("data/voyager/variance_tangent.txt")
-    variance_adjoint = loadtxt("data/voyager/variance_adjoint.txt")
-    variance_finite_difference = loadtxt("data/voyager/variance_finite_difference.txt")
+
+#if __name__ == "__main__":
+def plot_lorenz63_variance():
+    variance_tangent = loadtxt("data/hypersonic_new/variance_tangent.txt")
+    variance_adjoint = loadtxt("data/hypersonic_new/variance_adjoint.txt")
+    variance_finite_difference = loadtxt("data/hypersonic_new/variance_finite_difference.txt")
+    variance_tangent_part2 = loadtxt("data/voyager_new/variance_tangent.txt")
+    variance_adjoint_part2 = loadtxt("data/voyager_new/variance_adjoint.txt")
+    variance_finite_difference_part2 = loadtxt("data/voyager_new/variance_finite_difference.txt")
+
+    variance_tangent = append(variance_tangent,variance_tangent_part2)
+
+    variance_adjoint = append(variance_adjoint,variance_adjoint_part2)
+
+    variance_finite_difference = append(variance_finite_difference,variance_finite_difference_part2)
 
     n_tau = variance_tangent.shape[0]
+    
     tau_beg = 30
-    tau_step_size = 5
+    tau_step_size = 10
     tau_arr = array(range(tau_beg, tau_beg + tau_step_size*n_tau, \
             tau_step_size)) 
     dt = 0.005
@@ -194,6 +236,8 @@ if __name__ == "__main__":
     variance_tangent = variance_tangent[sane_indices_tangent]
     variance_adjoint = variance_adjoint[sane_indices_adjoint]
     variance_finite_difference = variance_finite_difference[sane_indices_finite_difference]
+    
+    
     tau_arr_tangent = copy(tau_arr[sane_indices_tangent])
     tau_arr_adjoint = copy(tau_arr[sane_indices_adjoint])
     tau_arr_finite_difference = copy(tau_arr[sane_indices_finite_difference])
@@ -204,8 +248,8 @@ if __name__ == "__main__":
             variance_finite_difference
 
     
-    slope_tangent, intercept_tangent, _, _, _ = linregress(2.0*tau_arr_tangent*dt, \
-            log(N_times_variance_tangent))  
+    slope_tangent, intercept_tangent, _, _, _ = linregress(2.0*tau_arr_tangent[50:]*dt, \
+            log(N_times_variance_tangent[50:]))  
 
     
     slope_adjoint, intercept_adjoint, _, _, _ = linregress(2.0*tau_arr_adjoint*dt, \
@@ -215,11 +259,22 @@ if __name__ == "__main__":
             linregress(2.0*tau_arr_finite_difference*dt, \
             log(N_times_variance_finite_difference))  
     
-    fig, ax = subplots(1,1,figsize=(15,6.5))   
-    ax.semilogy(tau_arr_tangent, N_times_variance_tangent, "o",label="tangent")
-    ax.semilogy(tau_arr_adjoint, N_times_variance_adjoint, "o",label="adjoint")
-    ax.semilogy(tau_arr_finite_difference, N_times_variance_finite_difference, "o", label="FD")
+    fig, ax = subplots(1,1,figsize=(15,15))   
+    ax.semilogy(tau_arr_tangent*dt, N_times_variance_tangent,label="tangent")
+    ax.semilogy(tau_arr_adjoint*dt, N_times_variance_adjoint,label="adjoint")
+    ax.semilogy(tau_arr_finite_difference*dt, N_times_variance_finite_difference, label="FD")
     ax.legend()
+
+    ax.set_xlabel(r"$\tau$",fontsize=14)
+    ax.set_ylabel(r"$(T/\tau){\rm var}$",fontsize=14,\
+            rotation="horizontal",labelpad=20)
+    ax.grid(True,which='both',axis='both')
+    ax.tick_params(labelsize=14)
+    #xaxis_formatter = LogFormatter(base=10.0,labelOnlyBase=False,\
+    #        minor_thresholds=(inf,inf))
+    #ax.xaxis.set_minor_formatter(xaxis_formatter)
+    savefig("paper/Ntimesvariance_vs_tau.png",dpi=500)
+    
 
 
 
