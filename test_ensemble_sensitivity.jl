@@ -110,7 +110,6 @@ function test_expectation_at_tau(tau::Int64, N_arr::Array{Int64,1}, method::Stri
 		cumexp_theta_tauN = cumsum(N_arr.*exp_theta_tauN)./cumN_arr
 		return cumexp_theta_tauN			
 end
-
 function test_variance_at_tau(tau::Int64, N::Int64, method::String="tangent")
 		if(method=="tangent")
 				ens_sens_method = compute_tangent_sensitivity
@@ -129,3 +128,4 @@ function test_variance_at_tau(tau::Int64, N::Int64, method::String="tangent")
 		end
 		return theta_tauN		
 end
+
