@@ -1,7 +1,6 @@
 @everywhere include("Lorenz63.jl")
 @everywhere include("ensemble_sensitivity.jl")
 @everywhere using LinearAlgebra
-using PyPlot
 ds = [0.,1.0,0.]
 function fitaline(x, y)
 	n = length(y)
@@ -89,4 +88,44 @@ function test_lyapunov_exponent_adjoint()
 	println(lyap_exp_adjoint)
 	@assert abs(lyap_exp_adjoint - 0.96) < 0.1  
 
+end
+
+function test_expectation_at_tau(tau::Int64, N_arr::Array{Int64,1}, method::String="tangent")
+		if(method=="tangent")
+				ens_sens_method = compute_tangent_sensitivity
+		elseif(method=="adjoint")
+				ens_sens_method = compute_adjoint_sensitivity
+		elseif(method=="fd")
+				ens_sens_method = compute_finite_difference_sensitivity
+		end
+		ds0 = [0.,1.,0.]
+		n_N = length(N_arr)
+		exp_theta_tauN = zeros(n_N)
+		for (i, N) in enumerate(N_arr)
+				exp_theta_tauN[i] = @sync @distributed (+) for n = 1:N	
+						ens_sens_method(rand(3), s0, tau, ds0)/N
+				end
+		end
+		cumN_arr = cumsum(N_arr)
+		cumexp_theta_tauN = cumsum(N_arr.*exp_theta_tauN)./cumN_arr
+		return cumexp_theta_tauN			
+end
+
+function test_variance_at_tau(tau::Int64, N::Int64, method::String="tangent")
+		if(method=="tangent")
+				ens_sens_method = compute_tangent_sensitivity
+		elseif(method=="adjoint")
+				ens_sens_method = compute_adjoint_sensitivity
+		elseif(method=="fd")
+				ens_sens_method = compute_finite_difference_sensitivity
+		end
+		ds0 = [0.,1.,0.]
+		n_N = 10000
+		theta_tauN = zeros(n_N)
+		for i in 1:n_N
+			theta_tauN[i] = @sync @distributed (+) for n = 1:N	
+				ens_sens_method(rand(3), s0, tau, ds0)/N
+			end
+		end
+		return theta_tauN		
 end
