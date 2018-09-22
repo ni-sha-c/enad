@@ -131,10 +131,10 @@ function test_variance_at_tau(tau::Int64, N::Int64, method::String="tangent")
 end
 function test_rare_event(tau::Int64, method::String="tangent")
 	if(method=="tangent")
-				ens_sens_method = compute_tangent_sensitivity
-		elseif(method=="adjoint")
-				ens_sens_method = compute_adjoint_sensitivity
-		end
+		ens_sens_method = compute_tangent_sensitivity
+    elseif(method=="adjoint")
+		ens_sens_method = compute_adjoint_sensitivity
+    end
 		ds0 = [0.,1.,0.]
 		N = 100000
 		exp_theta_tauN = 0.0
@@ -144,7 +144,7 @@ function test_rare_event(tau::Int64, method::String="tangent")
 			ens_sens_method(u, s0, tau, ds0)/N
 		end
 		print(exp_theta_tauN)
-		n_samples = 1000
+		n_samples = 1000000
 		u0 = SharedArray(rand(3,n_samples))
 		theta_tauN = SharedArray(zeros(n_samples))
 		@sync @distributed for i = 1:n_samples
