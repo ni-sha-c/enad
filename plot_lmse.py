@@ -112,7 +112,7 @@ def plot_lmse_vs_r():
 
 
 #if __name__=="__main__":
-def plot_lmse_vs_k():
+def plot_convergence_vs_ratio():
     n_kvalues = 6
     n_rvalues = 100
     n_points = 100

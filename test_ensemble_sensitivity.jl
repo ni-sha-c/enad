@@ -1,6 +1,7 @@
 @everywhere include("Lorenz63.jl")
 @everywhere include("ensemble_sensitivity.jl")
 @everywhere using LinearAlgebra
+@everywhere using SharedArrays
 ds = [0.,1.0,0.]
 function fitaline(x, y)
 	n = length(y)
@@ -128,4 +129,47 @@ function test_variance_at_tau(tau::Int64, N::Int64, method::String="tangent")
 		end
 		return theta_tauN		
 end
+function test_rare_event(tau::Int64, method::String="tangent")
+	if(method=="tangent")
+				ens_sens_method = compute_tangent_sensitivity
+		elseif(method=="adjoint")
+				ens_sens_method = compute_adjoint_sensitivity
+		end
+		ds0 = [0.,1.,0.]
+		N = 100000
+		exp_theta_tauN = 0.0
+		u = rand(3)
+		exp_theta_tauN = @sync @distributed (+) for n = 1:N	
+			u = Step(u,s0,2000)
+			ens_sens_method(u, s0, tau, ds0)/N
+		end
+		print(exp_theta_tauN)
+		n_samples = 1000
+		u0 = SharedArray(rand(3,n_samples))
+		theta_tauN = SharedArray(zeros(n_samples))
+		@sync @distributed for i = 1:n_samples
+				u0[:,i] = Step(u0[:,i], s0, 2000)
+		end
+
+		@sync @distributed for i = 1:n_samples	
+				theta_tauN[i] = ens_sens_method(u0[:,i], s0, tau, ds0)	
+		end
+
+		factor_exp_thetaN = abs.(theta_tauN./exp_theta_tauN)
+	
+		return u0, factor_exp_thetaN
+end
+		
+
+
+
+
+
+		
+		
+
+
+	
+		
+
 
