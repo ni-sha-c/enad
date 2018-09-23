@@ -2,6 +2,7 @@ from pylab import *
 from numpy import *
 from scipy.special import *
 from scipy.stats import linregress
+from mpl_toolkits.mplot3d import Axes3D
 n_plots = 6
 c_b = linspace(10.0,50.0,n_plots)
 c_var = linspace(1,500,n_plots)
@@ -152,8 +153,8 @@ def plot_convergence_vs_ratio():
     savefig("paper/slopeeminvsT_vs_ratiog1l1.png",dpi=500)
 
 
-if __name__=="__main__":
-#def plot_lorenz63_bias():
+#if __name__=="__main__":
+def plot_lorenz63_bias():
     exp_tangent = loadtxt("data/hypersonic_new/expected_value_tangent.txt")
     exp_adjoint = loadtxt("data/hypersonic_new/expected_value_adjoint.txt")
     exp_finite_difference = loadtxt("data/hypersonic_new/expected_value_finite_difference.txt")
@@ -275,6 +276,27 @@ def plot_lorenz63_variance():
     #ax.xaxis.set_minor_formatter(xaxis_formatter)
     savefig("paper/Ntimesvariance_vs_tau.png",dpi=500)
     
+if __name__=="__main__":
+#def plot_rare_trajectories():
+    u0 = loadtxt("data/hypersonic_rare_trajectories/initial_conditions.txt")
+    u0 = u0.T
+    scaling_factors = loadtxt("data/hypersonic_rare_trajectories/scaling_factors.txt")
+    u_high = u0[scaling_factors > 1.e2] 
+    u_low = u0[scaling_factors < 1.e-2]
+    fig_high = figure(figsize=(6,6))
+    ax_high = fig_high.add_subplot(111, projection='3d')
+    ax_high.tick_params(labelsize=14)
+    ax_high.scatter(u_high[::100,0], u_high[::100,1], \
+            u_high[::100,2], c="r")
+    fig_low = figure(figsize=(6,6))
+    ax_low = fig_low.add_subplot(111, projection='3d')
+    ax_low.tick_params(labelsize=14)
 
+    ax_low.scatter(u_low[:,0], u_low[:,1], \
+            u_low[:,2], c="b")
+
+    ax_high.scatter(u_low[:,0], u_low[:,1], \
+            u_low[:,2], c="b")
+   
 
 
